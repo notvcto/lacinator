@@ -1,4 +1,8 @@
-import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents } from "../utils/helpers.js";
+import {
+  getRandomQuestion,
+  buildQuestionEmbed,
+  buildQuestionComponents,
+} from "../utils/helpers.js";
 
 const BUTTON_TYPE_MAP = {
   btn_truth: "truth",
@@ -13,7 +17,6 @@ export async function execute(interaction, commands) {
   if (interaction.isButton()) {
     const type = BUTTON_TYPE_MAP[interaction.customId];
 
-    // Ignore unknown buttons
     if (!(interaction.customId in BUTTON_TYPE_MAP)) return;
 
     await interaction.deferReply();
@@ -26,7 +29,9 @@ export async function execute(interaction, commands) {
       });
     }
 
-    const embed = buildQuestionEmbed(question, interaction.user);
+    // Outside a guild, displayAvatarURL may need a fallback
+    const user = interaction.user;
+    const embed = buildQuestionEmbed(question, user);
     const sourceType = type ?? "random";
     return interaction.editReply({
       embeds: [embed],
@@ -41,14 +46,20 @@ export async function execute(interaction, commands) {
 
   if (!command) {
     console.warn(`[WARN] Unknown command received: ${interaction.commandName}`);
-    return interaction.reply({ content: "❓ Unknown command.", ephemeral: true });
+    return interaction.reply({
+      content: "❓ Unknown command.",
+      ephemeral: true,
+    });
   }
 
   try {
     await command.execute(interaction);
   } catch (error) {
     console.error(`[ERROR] Command /${interaction.commandName} threw:`, error);
-    const msg = { content: "💥 Something broke on my end. Try again?", ephemeral: true };
+    const msg = {
+      content: "💥 Something broke on my end. Try again?",
+      ephemeral: true,
+    };
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(msg);
     } else {

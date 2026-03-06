@@ -1,4 +1,9 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from "discord.js";
 import { Question } from "../models/Question.js";
 import { config } from "../../config.js";
 
@@ -35,7 +40,9 @@ export function buildQuestionEmbed(question, requestedBy) {
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL: requestedBy.displayAvatarURL({ dynamic: true }),
+      iconURL:
+        requestedBy.displayAvatarURL({ dynamic: true, forceStatic: false }) ??
+        requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -65,14 +72,14 @@ export function buildQuestionComponents(sourceType) {
       new ButtonBuilder()
         .setCustomId("btn_random")
         .setLabel("Random")
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Secondary),
     );
   } else {
     row.addComponents(
       new ButtonBuilder()
         .setCustomId("btn_random")
         .setLabel("Random Question")
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Primary),
     );
   }
 

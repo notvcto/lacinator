@@ -9,7 +9,12 @@
  */
 
 import "dotenv/config";
-import { REST, Routes } from "discord.js";
+import {
+  REST,
+  Routes,
+  IntegrationType,
+  InteractionContextType,
+} from "discord.js";
 import { readdirSync } from "fs";
 import { fileURLToPath, pathToFileURL } from "url";
 import path from "path";
@@ -18,14 +23,29 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const commands = [];
 
-const commandFiles = readdirSync(path.join(__dirname, "../commands")).filter((f) =>
-  f.endsWith(".js")
+const commandFiles = readdirSync(path.join(__dirname, "../commands")).filter(
+  (f) => f.endsWith(".js"),
 );
 
 for (const file of commandFiles) {
-  const filePath = pathToFileURL(path.join(__dirname, "../commands", file)).href;
+  const filePath = pathToFileURL(
+    path.join(__dirname, "../commands", file),
+  ).href;
   const command = await import(filePath);
   if (command.data) {
+    // Support both guild installs AND user installs (personal apps)
+    // Contexts: Guild, BotDM, PrivateChannel (works everywhere)
+    command.data
+      .setIntegrationTypes(
+        IntegrationType.GuildInstall,
+        IntegrationType.UserInstall,
+      )
+      .setContexts(
+        InteractionContextType.Guild,
+        InteractionContextType.BotDM,
+        InteractionContextType.PrivateChannel,
+      );
+
     commands.push(command.data.toJSON());
     console.log(`[DEPLOY] Queued /${command.data.name}`);
   }
