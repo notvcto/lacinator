@@ -18,19 +18,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const commands = [];
 
-const commandFiles = readdirSync(path.join(__dirname, "../commands")).filter(
-  (f) => f.endsWith(".js"),
+const commandFiles = readdirSync(path.join(__dirname, "../commands")).filter((f) =>
+  f.endsWith(".js")
 );
 
 for (const file of commandFiles) {
-  const filePath = pathToFileURL(
-    path.join(__dirname, "../commands", file),
-  ).href;
+  const filePath = pathToFileURL(path.join(__dirname, "../commands", file)).href;
   const command = await import(filePath);
   if (command.data) {
     // 0 = GuildInstall, 1 = UserInstall
     // Contexts: 0 = Guild, 1 = BotDM, 2 = PrivateChannel
-    command.data.setIntegrationTypes(0, 1).setContexts(0, 1, 2);
+    command.data
+      .setIntegrationTypes(0, 1)
+      .setContexts(0, 1, 2);
 
     commands.push(command.data.toJSON());
     console.log(`[DEPLOY] Queued /${command.data.name}`);

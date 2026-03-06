@@ -1,17 +1,17 @@
 // ============================================================
 //  Lacinator Config
-//  Add Discord user IDs here to grant /add permissions
 // ============================================================
 
 export const config = {
-  // Users allowed to add questions via /add
+  // Owners: can use ALL commands including /trust add & /trust remove
+  // These are always authorized regardless of the DB.
   // Right-click a user in Discord → "Copy User ID" (needs Developer Mode on)
-  authorizedUsers: ["1080137111287640144", "1006166882048548924"],
+  owners: [""],
 
-  // Default number of questions returned by /list (admin command)
+  // Default number of questions per page in /list
   listPageSize: 10,
 
-  // Embed color (hex) for each question type
+  // Embed colors per question type
   colors: {
     truth: 0x5865f2, // blurple
     dare: 0xed4245, // red
@@ -20,7 +20,7 @@ export const config = {
     random: 0xeb459e, // pink
   },
 
-  // Category display labels
+  // Display labels per type
   labels: {
     truth: "Truth 🤔",
     dare: "Dare 😈",

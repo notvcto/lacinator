@@ -4,37 +4,28 @@ import { isAuthorized, unauthorizedReply } from "../utils/helpers.js";
 
 export const data = new SlashCommandBuilder()
   .setName("remove")
-  .setDescription("Remove a question from Lacinator's pool by its ID [authorized users only]")
-  .addStringOption((opt) =>
-    opt
-      .setName("id")
-      .setDescription("The question ID (get it from /list)")
-      .setRequired(true)
+  .setDescription("Remove a question by its ID [authorized users only]")
+  .addIntegerOption((opt) =>
+    opt.setName("id").setDescription("The question ID (e.g. 42 from /list)").setRequired(true).setMinValue(1)
   );
 
 export async function execute(interaction) {
-  if (!isAuthorized(interaction.user.id)) {
+  if (!(await isAuthorized(interaction.user.id))) {
     return interaction.reply(unauthorizedReply());
   }
 
-  const id = interaction.options.getString("id").trim();
-
-  let question;
-  try {
-    question = await Question.findOne({ _id: id, active: true });
-  } catch {
-    return interaction.reply({ content: "❌ Invalid question ID format.", ephemeral: true });
-  }
+  const questionId = interaction.options.getInteger("id");
+  const question = await Question.findOne({ questionId, active: true });
 
   if (!question) {
-    return interaction.reply({ content: "❌ Question not found (or already removed).", ephemeral: true });
+    return interaction.reply({ content: `❌ No active question found with ID **#${questionId}**.`, ephemeral: true });
   }
 
   question.active = false;
   await question.save();
 
   return interaction.reply({
-    content: `🗑️ Removed **${question.type}** question:\n> ${question.text}`,
+    content: `🗑️ Removed **${question.type}** question **#${question.questionId}**:\n> ${question.text}`,
     ephemeral: true,
   });
 }

@@ -1,22 +1,16 @@
-import {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} from "discord.js";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { Question } from "../models/Question.js";
+import { TrustedUser } from "../models/TrustedUser.js";
 import { config } from "../../config.js";
 
 /**
  * Fetch a random question of a given type from the DB.
- * @param {string|null} type  — null means any type (used by /random)
- * @returns {Promise<import("../models/Question.js").Question|null>}
+ * @param {string|null} type — null means any type (/random)
  */
 export async function getRandomQuestion(type = null) {
   const filter = { active: true };
   if (type) filter.type = type;
 
-  // MongoDB aggregation $sample is the cleanest true-random pull
   const [question] = await Question.aggregate([
     { $match: filter },
     { $sample: { size: 1 } },
@@ -26,83 +20,92 @@ export async function getRandomQuestion(type = null) {
 }
 
 /**
- * Build a Discord embed matching the ToD bot style:
- * - Author row: user avatar + "Requested by <username>"
- * - Description: bold question text
- * - Footer: Type | Rating | ID | Added by
+ * Build a Discord embed matching the ToD bot style.
+ * Footer: Type | Rating | ID: #42 | Added by: username
  */
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();
-  const shortId = question._id.toString().slice(-10); // last 10 chars, matches ToD style
+  const id = question.questionId ? `#${question.questionId}` : question._id.toString().slice(-6);
 
   return new EmbedBuilder()
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL:
-        requestedBy.displayAvatarURL({ dynamic: true, forceStatic: false }) ??
-        requestedBy.defaultAvatarURL,
+      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
-      text: `Type: ${typeLabel} | Rating: ${question.rating} | ID: ${shortId} | Added by: ${question.addedByUsername}`,
+      text: `Type: ${typeLabel} | Rating: ${question.rating} | ID: ${id} | Added by: ${question.addedByUsername}`,
     });
 }
 
 /**
- * Build the button row that appears under every question.
- * Shows Truth / Dare / Random for typed commands,
- * or just Random for /random.
- * @param {"truth"|"dare"|"nhie"|"wyr"|"random"} sourceType
+ * Buttons under each question — context-aware per type.
+ *
+ * truth/dare → Truth | Dare | Random
+ * nhie       → Another NHIE | Random
+ * wyr        → Another WYR | Random
+ * random     → Random Question
  */
 export function buildQuestionComponents(sourceType) {
   const row = new ActionRowBuilder();
 
-  if (sourceType !== "random") {
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId("btn_truth")
-        .setLabel("Truth")
-        .setStyle(ButtonStyle.Primary),
-      new ButtonBuilder()
-        .setCustomId("btn_dare")
-        .setLabel("Dare")
-        .setStyle(ButtonStyle.Danger),
-      new ButtonBuilder()
-        .setCustomId("btn_random")
-        .setLabel("Random")
-        .setStyle(ButtonStyle.Secondary),
-    );
-  } else {
-    row.addComponents(
-      new ButtonBuilder()
-        .setCustomId("btn_random")
-        .setLabel("Random Question")
-        .setStyle(ButtonStyle.Primary),
-    );
+  switch (sourceType) {
+    case "truth":
+    case "dare":
+      row.addComponents(
+        new ButtonBuilder().setCustomId("btn_truth").setLabel("Truth").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_dare").setLabel("Dare").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+      );
+      break;
+
+    case "nhie":
+      row.addComponents(
+        new ButtonBuilder().setCustomId("btn_nhie").setLabel("Another NHIE").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+      );
+      break;
+
+    case "wyr":
+      row.addComponents(
+        new ButtonBuilder().setCustomId("btn_wyr").setLabel("Another WYR").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+      );
+      break;
+
+    case "random":
+    default:
+      row.addComponents(
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random Question").setStyle(ButtonStyle.Primary)
+      );
+      break;
   }
 
   return row;
 }
 
-export function isAuthorized(userId) {
-  return config.authorizedUsers.includes(userId);
+/**
+ * Check if a userId is authorized (owner in config OR trusted in DB).
+ */
+export async function isAuthorized(userId) {
+  if (config.owners.includes(userId)) return true;
+  const trusted = await TrustedUser.exists({ userId });
+  return !!trusted;
 }
 
 /**
- * Standard "not authorized" reply.
+ * Check if a userId is an owner (can manage /trust).
  */
+export function isOwner(userId) {
+  return config.owners.includes(userId);
+}
+
 export function unauthorizedReply() {
-  return {
-    content: "❌ You're not on the list, bestie.",
-    ephemeral: true,
-  };
+  return { content: "❌ You're not on the list, bestie.", ephemeral: true };
 }
 
-/**
- * Standard "no questions found" reply.
- */
 export function emptyReply(type) {
   const label = type ? config.labels[type] : "any category";
   return {

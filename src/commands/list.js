@@ -5,42 +5,34 @@ import { config } from "../../config.js";
 
 export const data = new SlashCommandBuilder()
   .setName("list")
-  .setDescription("Browse questions in the pool [authorized users only]")
+  .setDescription("Browse the question pool [authorized users only]")
   .addStringOption((opt) =>
-    opt
-      .setName("type")
-      .setDescription("Filter by category (leave blank for all)")
-      .setRequired(false)
-      .addChoices(
-        { name: "Truth 🤔", value: "truth" },
-        { name: "Dare 😈", value: "dare" },
-        { name: "Never Have I Ever 🙋", value: "nhie" },
-        { name: "Would You Rather 🤷", value: "wyr" }
-      )
+    opt.setName("type").setDescription("Filter by category").setRequired(false).addChoices(
+      { name: "Truth 🤔",            value: "truth" },
+      { name: "Dare 😈",             value: "dare"  },
+      { name: "Never Have I Ever 🙋", value: "nhie"  },
+      { name: "Would You Rather 🤷", value: "wyr"   }
+    )
   )
   .addIntegerOption((opt) =>
-    opt
-      .setName("page")
-      .setDescription("Page number (default: 1)")
-      .setRequired(false)
-      .setMinValue(1)
+    opt.setName("page").setDescription("Page number (default: 1)").setRequired(false).setMinValue(1)
   );
 
 export async function execute(interaction) {
-  if (!isAuthorized(interaction.user.id)) {
+  if (!(await isAuthorized(interaction.user.id))) {
     return interaction.reply(unauthorizedReply());
   }
 
-  const type = interaction.options.getString("type");
-  const page = interaction.options.getInteger("page") ?? 1;
+  const type     = interaction.options.getString("type");
+  const page     = interaction.options.getInteger("page") ?? 1;
   const pageSize = config.listPageSize;
 
   const filter = { active: true };
   if (type) filter.type = type;
 
-  const total = await Question.countDocuments(filter);
+  const total     = await Question.countDocuments(filter);
   const questions = await Question.find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ questionId: 1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize);
 
@@ -49,12 +41,11 @@ export async function execute(interaction) {
   }
 
   const totalPages = Math.ceil(total / pageSize);
-  const typeLabel = type ? config.labels[type] : "All Categories";
-  const color = type ? config.colors[type] : config.colors.random;
+  const typeLabel  = type ? config.labels[type] : "All Categories";
+  const color      = type ? config.colors[type] : config.colors.random;
 
   const lines = questions.map(
-    (q, i) =>
-      `\`${(page - 1) * pageSize + i + 1}.\` [${q.type}] ${q.text}\n*ID: \`${q._id}\`*`
+    (q) => `\`#${q.questionId}\` **[${q.type}]** [${q.rating}] ${q.text}`
   );
 
   const embed = new EmbedBuilder()

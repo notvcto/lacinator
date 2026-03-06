@@ -2,6 +2,12 @@ import mongoose from "mongoose";
 
 const questionSchema = new mongoose.Schema(
   {
+    questionId: {
+      // Short human-readable ID e.g. #42 — assigned at creation via Counter
+      type: Number,
+      unique: true,
+      index: true,
+    },
     type: {
       type: String,
       enum: ["truth", "dare", "nhie", "wyr"],

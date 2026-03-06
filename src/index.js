@@ -5,13 +5,25 @@ import { readdirSync } from "fs";
 import { fileURLToPath, pathToFileURL } from "url";
 import path from "path";
 import { startStatusServer, registerClient } from "./server.js";
+import { TrustedUser } from "./models/TrustedUser.js";
+import { config } from "../config.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── MongoDB ──────────────────────────────────────────────────────────────────
 mongoose
   .connect(process.env.MONGODB_URI)
-  .then(() => console.log("[DB] Connected to MongoDB"))
+  .then(async () => {
+    console.log("[DB] Connected to MongoDB");
+    // Ensure all owners are present in the TrustedUser collection
+    for (const userId of config.owners) {
+      await TrustedUser.updateOne(
+        { userId },
+        { $setOnInsert: { userId, username: "owner", addedBy: "system", addedByUsername: "system" } },
+        { upsert: true }
+      );
+    }
+  })
   .catch((err) => {
     console.error("[DB] Connection failed:", err);
     process.exit(1);
