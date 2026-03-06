@@ -1,22 +1,25 @@
-import {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} from "discord.js";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { Question } from "../models/Question.js";
 import { TrustedUser } from "../models/TrustedUser.js";
 import { config } from "../../config.js";
 
 /**
  * Fetch a random question of a given type from the DB.
- * @param {string|null} type   — null means any type (/random)
- * @param {boolean}     allowR — whether to include R-rated questions (NSFW channels only)
+ * @param {string|null}  type    — null means any type (/random)
+ * @param {boolean}      allowR  — whether R-rated questions are allowed
+ * @param {string|null}  rating  — explicit rating filter (PG / PG-13 / R)
  */
-export async function getRandomQuestion(type = null, allowR = false) {
+export async function getRandomQuestion(type = null, allowR = false, rating = null) {
   const filter = { active: true };
   if (type) filter.type = type;
-  if (!allowR) filter.rating = { $ne: "R" };
+
+  if (rating) {
+    // Explicit rating requested — still gate R behind allowR
+    if (rating === "R" && !allowR) return { __blocked: true };
+    filter.rating = rating;
+  } else if (!allowR) {
+    filter.rating = { $ne: "R" };
+  }
 
   const [question] = await Question.aggregate([
     { $match: filter },
@@ -27,23 +30,33 @@ export async function getRandomQuestion(type = null, allowR = false) {
 }
 
 /**
+ * Resolve whether the interaction is in an age-restricted channel.
+ * Fetches the channel if it's not cached (user-install contexts, etc.)
+ */
+export async function resolveNsfw(interaction) {
+  let channel = interaction.channel;
+  if (!channel && interaction.channelId) {
+    channel = await interaction.client.channels
+      .fetch(interaction.channelId)
+      .catch(() => null);
+  }
+  return channel?.nsfw === true;
+}
+
+/**
  * Build a Discord embed matching the ToD bot style.
  * Footer: Type | Rating | ID: #42 | Added by: username
  */
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();
-  const id = question.questionId
-    ? `#${question.questionId}`
-    : question._id.toString().slice(-6);
+  const id = question.questionId ? `#${question.questionId}` : question._id.toString().slice(-6);
 
   return new EmbedBuilder()
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL:
-        requestedBy.displayAvatarURL({ dynamic: true }) ??
-        requestedBy.defaultAvatarURL,
+      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -66,54 +79,30 @@ export function buildQuestionComponents(sourceType) {
     case "truth":
     case "dare":
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_truth")
-          .setLabel("Truth")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId("btn_dare")
-          .setLabel("Dare")
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random")
-          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("btn_truth").setLabel("Truth").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_dare").setLabel("Dare").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
       );
       break;
 
     case "nhie":
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_nhie")
-          .setLabel("Another NHIE")
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random")
-          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("btn_nhie").setLabel("Another NHIE").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
       );
       break;
 
     case "wyr":
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_wyr")
-          .setLabel("Another WYR")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random")
-          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("btn_wyr").setLabel("Another WYR").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
       );
       break;
 
     case "random":
     default:
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random Question")
-          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random Question").setStyle(ButtonStyle.Primary)
       );
       break;
   }
@@ -139,14 +128,6 @@ export function isOwner(userId) {
 
 export function unauthorizedReply() {
   return { content: "❌ You're not on the list, bestie.", ephemeral: true };
-}
-
-/**
- * Returns true only for guild text channels marked as age-restricted.
- * DMs, group DMs, and unknown channel types default to false.
- */
-export function isNsfwChannel(channel) {
-  return channel?.nsfw === true;
 }
 
 export function emptyReply(type) {

@@ -1,17 +1,27 @@
 import { SlashCommandBuilder } from "discord.js";
-import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, emptyReply } from "../utils/helpers.js";
+import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, resolveNsfw, emptyReply } from "../utils/helpers.js";
 
 export const data = new SlashCommandBuilder()
   .setName("dare")
-  .setDescription("Get a random Dare from Lacinator 😈");
+  .setDescription("Get a random Dare 😈")
+  .addStringOption((opt) =>
+    opt.setName("rating").setDescription("Filter by rating (R only works in age-restricted channels)").setRequired(false).addChoices(
+      { name: "PG", value: "PG" }, { name: "PG-13", value: "PG-13" }, { name: "R", value: "R" }
+    )
+  );
 
 export async function execute(interaction) {
-  const question = await getRandomQuestion("dare");
+  const rating   = interaction.options.getString("rating");
+  const allowR   = await resolveNsfw(interaction);
+  const question = await getRandomQuestion("dare", allowR, rating);
 
-  if (!question) {
-    return interaction.reply(emptyReply("dare"));
+  if (question?.__blocked) {
+    return interaction.reply({ content: "🔞 R-rated questions are only available in age-restricted channels.", ephemeral: true });
   }
+  if (!question) return interaction.reply(emptyReply("dare"));
 
-  const embed = buildQuestionEmbed(question, interaction.user);
-  return interaction.reply({ embeds: [embed], components: [buildQuestionComponents("dare")] });
+  return interaction.reply({
+    embeds: [buildQuestionEmbed(question, interaction.user)],
+    components: [buildQuestionComponents("dare")],
+  });
 }

@@ -1,7 +1,6 @@
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { Question } from "../models/Question.js";
+import { SlashCommandBuilder } from "discord.js";
 import { isAuthorized, unauthorizedReply } from "../utils/helpers.js";
-import { config } from "../../config.js";
+import { buildListMessage } from "../utils/listInteractions.js";
 
 export const data = new SlashCommandBuilder()
   .setName("list")
@@ -23,36 +22,9 @@ export async function execute(interaction) {
     return interaction.reply(unauthorizedReply());
   }
 
-  const type     = interaction.options.getString("type");
-  const page     = interaction.options.getInteger("page") ?? 1;
-  const pageSize = config.listPageSize;
+  const type = interaction.options.getString("type");
+  const page = interaction.options.getInteger("page") ?? 1;
 
-  const filter = { active: true };
-  if (type) filter.type = type;
-
-  const total     = await Question.countDocuments(filter);
-  const questions = await Question.find(filter)
-    .sort({ questionId: 1 })
-    .skip((page - 1) * pageSize)
-    .limit(pageSize);
-
-  if (!questions.length) {
-    return interaction.reply({ content: "😬 No questions found with those filters.", ephemeral: true });
-  }
-
-  const totalPages = Math.ceil(total / pageSize);
-  const typeLabel  = type ? config.labels[type] : "All Categories";
-  const color      = type ? config.colors[type] : config.colors.random;
-
-  const lines = questions.map(
-    (q) => `\`#${q.questionId}\` **[${q.type}]** [${q.rating}] ${q.text}`
-  );
-
-  const embed = new EmbedBuilder()
-    .setColor(color)
-    .setTitle(`📋 Lacinator Question Pool — ${typeLabel}`)
-    .setDescription(lines.join("\n\n"))
-    .setFooter({ text: `Page ${page}/${totalPages} · ${total} total questions` });
-
-  return interaction.reply({ embeds: [embed], ephemeral: true });
+  const msg = await buildListMessage(page, type);
+  return interaction.reply({ ...msg, ephemeral: true });
 }
