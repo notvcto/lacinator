@@ -6,7 +6,7 @@ export const config = {
   // Owners: can use ALL commands including /trust add & /trust remove
   // These are always authorized regardless of the DB.
   // Right-click a user in Discord → "Copy User ID" (needs Developer Mode on)
-  owners: ["1080137111287640144", "1006166882048548924"],
+  owners: ["1080137111287640144"],
 
   // Default number of questions per page in /list
   listPageSize: 10,
