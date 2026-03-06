@@ -1,15 +1,22 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from "discord.js";
 import { Question } from "../models/Question.js";
 import { TrustedUser } from "../models/TrustedUser.js";
 import { config } from "../../config.js";
 
 /**
  * Fetch a random question of a given type from the DB.
- * @param {string|null} type — null means any type (/random)
+ * @param {string|null} type   — null means any type (/random)
+ * @param {boolean}     allowR — whether to include R-rated questions (NSFW channels only)
  */
-export async function getRandomQuestion(type = null) {
+export async function getRandomQuestion(type = null, allowR = false) {
   const filter = { active: true };
   if (type) filter.type = type;
+  if (!allowR) filter.rating = { $ne: "R" };
 
   const [question] = await Question.aggregate([
     { $match: filter },
@@ -26,13 +33,17 @@ export async function getRandomQuestion(type = null) {
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();
-  const id = question.questionId ? `#${question.questionId}` : question._id.toString().slice(-6);
+  const id = question.questionId
+    ? `#${question.questionId}`
+    : question._id.toString().slice(-6);
 
   return new EmbedBuilder()
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
+      iconURL:
+        requestedBy.displayAvatarURL({ dynamic: true }) ??
+        requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -55,30 +66,54 @@ export function buildQuestionComponents(sourceType) {
     case "truth":
     case "dare":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_truth").setLabel("Truth").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("btn_dare").setLabel("Dare").setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_truth")
+          .setLabel("Truth")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId("btn_dare")
+          .setLabel("Dare")
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "nhie":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_nhie").setLabel("Another NHIE").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_nhie")
+          .setLabel("Another NHIE")
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "wyr":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_wyr").setLabel("Another WYR").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_wyr")
+          .setLabel("Another WYR")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "random":
     default:
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random Question").setStyle(ButtonStyle.Primary)
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random Question")
+          .setStyle(ButtonStyle.Primary),
       );
       break;
   }
@@ -104,6 +139,14 @@ export function isOwner(userId) {
 
 export function unauthorizedReply() {
   return { content: "❌ You're not on the list, bestie.", ephemeral: true };
+}
+
+/**
+ * Returns true only for guild text channels marked as age-restricted.
+ * DMs, group DMs, and unknown channel types default to false.
+ */
+export function isNsfwChannel(channel) {
+  return channel?.nsfw === true;
 }
 
 export function emptyReply(type) {
