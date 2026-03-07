@@ -1,4 +1,9 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from "discord.js";
 import { Question } from "../models/Question.js";
 import { TrustedUser } from "../models/TrustedUser.js";
 import { config } from "../../config.js";
@@ -9,7 +14,11 @@ import { config } from "../../config.js";
  * @param {boolean}      allowR  — whether R-rated questions are allowed
  * @param {string|null}  rating  — explicit rating filter (PG / PG-13 / R)
  */
-export async function getRandomQuestion(type = null, allowR = false, rating = null) {
+export async function getRandomQuestion(
+  type = null,
+  allowR = false,
+  rating = null,
+) {
   const filter = { active: true };
   if (type) filter.type = type;
 
@@ -31,16 +40,35 @@ export async function getRandomQuestion(type = null, allowR = false, rating = nu
 
 /**
  * Resolve whether the interaction is in an age-restricted channel.
- * Fetches the channel if it's not cached (user-install contexts, etc.)
+ *
+ * Priority:
+ * 1. interaction.channel.nsfw — present when the bot is a guild member
+ * 2. interaction.channelId raw data — Discord sends this in the payload
+ *    even for user-install contexts where the bot isn't in the guild
+ * 3. Attempt a channel fetch as a last resort
+ * 4. Default to false (safe fallback)
  */
 export async function resolveNsfw(interaction) {
-  let channel = interaction.channel;
-  if (!channel && interaction.channelId) {
-    channel = await interaction.client.channels
+  // Fastest path — channel already resolved and has nsfw flag
+  if (interaction.channel?.nsfw === true) return true;
+  if (interaction.channel?.nsfw === false) return false;
+
+  // Discord includes raw channel data in the interaction payload for
+  // user-install contexts — check it directly before trying a fetch
+  const rawChannel =
+    interaction.raw?.channel ??
+    interaction.options?.resolved?.channels?.first?.();
+  if (rawChannel?.nsfw === true) return true;
+
+  // Last resort: try fetching (works when bot is a guild member)
+  if (interaction.channelId) {
+    const channel = await interaction.client.channels
       .fetch(interaction.channelId)
       .catch(() => null);
+    if (channel?.nsfw === true) return true;
   }
-  return channel?.nsfw === true;
+
+  return false;
 }
 
 /**
@@ -50,13 +78,17 @@ export async function resolveNsfw(interaction) {
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();
-  const id = question.questionId ? `#${question.questionId}` : question._id.toString().slice(-6);
+  const id = question.questionId
+    ? `#${question.questionId}`
+    : question._id.toString().slice(-6);
 
   return new EmbedBuilder()
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
+      iconURL:
+        requestedBy.displayAvatarURL({ dynamic: true }) ??
+        requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -79,30 +111,54 @@ export function buildQuestionComponents(sourceType) {
     case "truth":
     case "dare":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_truth").setLabel("Truth").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("btn_dare").setLabel("Dare").setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_truth")
+          .setLabel("Truth")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId("btn_dare")
+          .setLabel("Dare")
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "nhie":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_nhie").setLabel("Another NHIE").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_nhie")
+          .setLabel("Another NHIE")
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "wyr":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_wyr").setLabel("Another WYR").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_wyr")
+          .setLabel("Another WYR")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "random":
     default:
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random Question").setStyle(ButtonStyle.Primary)
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random Question")
+          .setStyle(ButtonStyle.Primary),
       );
       break;
   }
