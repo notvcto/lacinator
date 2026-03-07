@@ -4,8 +4,9 @@
 
 ## Stack
 
-- **discord.js v14** — slash commands, embeds, buttons
+- **discord.js v14** — slash commands, embeds, buttons, modals
 - **MongoDB + Mongoose** — question storage
+- **@napi-rs/canvas** — image composition for `/bully` and `/ship`
 - **Node.js 18+** (ESM)
 
 ---
@@ -35,7 +36,11 @@ cp .env.example .env
 
 ### 3. Add owners
 
-Open `config.js` and drop your Discord user IDs into `owners`. Owners have permanent full access and can promote other users via `/trust`.
+Open `config.js` and fill in:
+
+- `owners` — your Discord user IDs (permanent full access, managed via file)
+- `andiUserId` — Andi's Discord user ID (the Andi Tax victim)
+- `andiTaxRate` — probability (0–1) that Andi gets a special question (default: `0.20`)
 
 **How to get a user ID:**
 
@@ -47,8 +52,6 @@ Open `config.js` and drop your Discord user IDs into `owners`. Owners have perma
 1. Go to [discord.com/developers/applications](https://discord.com/developers/applications) → Lacinator
 2. **Installation** tab → under **Installation Contexts**, enable **User Install**
 3. Save changes
-
-This allows anyone to add Lacinator to their profile and use it anywhere — even in servers it isn't in.
 
 ### 5. Register slash commands
 
@@ -74,26 +77,32 @@ npm run dev
 
 ### 🎮 Game Commands (everyone)
 
-| Command   | Description                                           |
-| --------- | ----------------------------------------------------- |
-| `/truth`  | Random truth question                                 |
-| `/dare`   | Random dare                                           |
-| `/nhie`   | Never Have I Ever                                     |
-| `/wyr`    | Would You Rather                                      |
-| `/random` | Random question from any category                     |
-| `/stats`  | Question pool breakdown by type and rating            |
-| `/ping`   | Check bot, API, and database status                   |
-| `/help`   | List all commands (context-aware by permission level) |
+| Command               | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `/truth`              | Random truth question                          |
+| `/dare`               | Random dare                                    |
+| `/nhie`               | Never Have I Ever                              |
+| `/wyr`                | Would You Rather                               |
+| `/random`             | Random question from truth/nhie/wyr (no dares) |
+| `/ship @user1 @user2` | Compatibility score with canvas image          |
+| `/bully [@target]`    | Deploy the boot — defaults to Andi             |
+| `/stats`              | Question pool breakdown by type and rating     |
+| `/ping`               | Check bot, API, and database status            |
+| `/help`               | Context-aware command list                     |
+
+All game commands accept an optional `rating` filter (`PG`, `PG-13`, `R`). R-rated questions are gated behind age-restricted channels.
 
 ### ⚙️ Mod Commands (owners + trusted users)
 
-| Command   | Description                          |
-| --------- | ------------------------------------ |
-| `/add`    | Add a question to the pool           |
-| `/edit`   | Edit an existing question by ID      |
-| `/remove` | Remove a question by ID              |
-| `/list`   | Browse the question pool (paginated) |
-| `/search` | Search questions by keyword          |
+| Command     | Description                                                              |
+| ----------- | ------------------------------------------------------------------------ |
+| `/add`      | Add a question to the main pool                                          |
+| `/edit`     | Edit a question by ID                                                    |
+| `/remove`   | Remove a question by ID                                                  |
+| `/list`     | Browse the main pool — paginated with inline edit/remove via select menu |
+| `/search`   | Search questions by keyword                                              |
+| `/andiadd`  | Add a question to the Andi special pool 🎯                               |
+| `/andilist` | Browse & manage the Andi pool 🎯                                         |
 
 ### 👑 Owner Commands (config.js `owners` only)
 
@@ -102,59 +111,6 @@ npm run dev
 | `/trust add @user`    | Grant a user mod-level access   |
 | `/trust remove @user` | Revoke a user's access          |
 | `/trust list`         | See all currently trusted users |
-
----
-
-## Question IDs
-
-Every question gets a short, clean numeric ID (e.g. `#42`) when added. Use these IDs with `/edit`, `/remove`, and as references from `/list` and `/search`. No more pasting MongoDB ObjectIDs.
-
----
-
-## Managing questions
-
-### Adding
-
-```
-/add type:Dare question:Send a voice message saying something embarrassing rating:PG
-```
-
-Rating defaults to `PG` if omitted. Options are `PG`, `PG-13`, and `R`.
-After adding, Lacinator confirms the new ID and the updated pool count.
-
-### Editing
-
-```
-/edit id:42 text:Updated question text here
-/edit id:42 type:Truth rating:PG-13
-```
-
-Any combination of `text`, `type`, and `rating` can be updated — omit fields you don't want to change.
-
-### Removing
-
-```
-/remove id:42
-```
-
-### Browsing & searching
-
-```
-/list
-/list type:Dare page:2
-/search keyword:embarrassing
-```
-
----
-
-## Auth system
-
-There are two levels of access:
-
-- **Owners** — defined in `config.js`. Always authorized, can use `/trust` to manage others. Requires a redeploy to change.
-- **Trusted users** — managed at runtime via `/trust add/remove`. Can add, edit, remove, and browse questions. No redeploy needed.
-
-Questions are **global** — shared across all servers and DMs. There's no per-server separation.
 
 ---
 
@@ -169,13 +125,82 @@ Every question response includes buttons so the game never has to stop:
 | `/wyr`              | Another WYR · Random  |
 | `/random`           | Random Question       |
 
+The **Random** button pulls from truth/nhie/wyr only — dares are excluded. All button clicks are subject to the Andi Tax.
+
+Every `/bully` response includes a **Fight back! 🥊** button. Andi cannot use it.
+
+---
+
+## The Andi Tax 🎯
+
+When Andi (configured via `andiUserId`) uses any game command or button, there's a `andiTaxRate` chance (default 20%) that her question is pulled from the Andi special pool instead of the main pool. The response comes back in orange with a "Andi Tax — Specially Curated for You" header.
+
+Manage the Andi pool with `/andiadd` and `/andilist`.
+
+---
+
+## Question IDs
+
+Every question gets a short numeric ID (e.g. `#42`) on creation. Main pool and Andi pool have separate ID counters. Use IDs with `/edit`, `/remove`, and as references from `/list`, `/andilist`, and `/search`.
+
+---
+
+## Auth system
+
+Two levels of access:
+
+- **Owners** — defined in `config.js`. Always authorized, can manage `/trust`. Requires a redeploy to change.
+- **Trusted users** — managed at runtime via `/trust add/remove`. Can add, edit, remove, and browse questions. No redeploy needed.
+
+Questions are **global** — shared across all servers and DMs.
+
+---
+
+## Bully templates
+
+Templates live in `BULLY_TEMPLATES` inside `src/commands/bully.js`. Each template points to an image in your GitHub repo via raw URL and defines avatar placement:
+
+```js
+{
+  url: `${GITHUB_RAW}/yourimage.jpg`,
+  bully:  { x: 300, y: 200, r: 60 },  // center x, center y, radius
+  target: { x: 500, y: 250, r: 60 },
+  message: "{bully} did something terrible to {target}.",
+}
+```
+
+Push the image to `/assets/` on GitHub and add the entry — no redeploy needed, just a restart.
+
+---
+
+## R-rated content
+
+R-rated questions are only served in channels with Discord's **Age-Restricted Channel** toggle enabled (channel settings → Overview → Age-Restricted Channel). This applies to both slash commands and button clicks.
+
 ---
 
 ## Status server
 
-Lacinator runs a lightweight HTTP status server alongside the bot. Hit `http://your-host:3000/status` (or the `STATUS_PORT` you configured) for a JSON health report covering Discord connection, WebSocket ping, database state, and question counts.
+Lacinator runs a lightweight HTTP server alongside the bot. Hit `/status` on your host for a JSON health report:
 
-Pairs nicely with [UptimeRobot](https://uptimerobot.com) — set up an HTTP monitor pointing at `/status`. The endpoint returns `503` when degraded, so UptimeRobot will alert correctly.
+```json
+{
+  "status": "ok",
+  "uptime": "2h 14m 3s",
+  "discord": { "ready": true, "tag": "Lacinator#3314", "ping": 42 },
+  "database": { "status": "connected" },
+  "questions": {
+    "total": 47,
+    "byType": { "truth": 12, "dare": 15, "nhie": 10, "wyr": 10 }
+  },
+  "andiPool": {
+    "total": 8,
+    "byType": { "truth": 3, "dare": 2, "nhie": 2, "wyr": 1 }
+  }
+}
+```
+
+Returns `503` when degraded — pairs well with [UptimeRobot](https://uptimerobot.com).
 
 ---
 
@@ -186,4 +211,4 @@ Pairs nicely with [UptimeRobot](https://uptimerobot.com) — set up an HTTP moni
 3. Whitelist `0.0.0.0/0` under Network Access (or your host IP)
 4. Get the connection string and paste it as `MONGODB_URI`
 
-Collections and indexes are created automatically on first run. The baseline Atlas M0 cluster uses ~100MB regardless of actual data — that's normal and not your questions taking up space.
+Collections and indexes are created automatically on first run. The baseline M0 cluster uses ~100MB regardless of actual data — that's normal.

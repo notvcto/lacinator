@@ -1,6 +1,7 @@
 import http from "http";
 import mongoose from "mongoose";
 import { Question } from "./models/Question.js";
+import { AndiQuestion } from "./models/AndiQuestion.js";
 
 let botClient = null;
 const startedAt = new Date();
@@ -46,17 +47,30 @@ export function startStatusServer(port = process.env.STATUS_PORT ?? 3000) {
     const uptime = uptimeString(Date.now() - startedAt.getTime());
 
     let questionCounts = {};
+    let andiCounts = {};
     try {
-      const counts = await Question.aggregate([
-        { $match: { active: true } },
-        { $group: { _id: "$type", count: { $sum: 1 } } },
+      const [counts, andi] = await Promise.all([
+        Question.aggregate([
+          { $match: { active: true } },
+          { $group: { _id: "$type", count: { $sum: 1 } } },
+        ]),
+        AndiQuestion.aggregate([
+          { $match: { active: true } },
+          { $group: { _id: "$type", count: { $sum: 1 } } },
+        ]),
       ]);
       questionCounts = Object.fromEntries(counts.map((c) => [c._id, c.count]));
+      andiCounts = Object.fromEntries(andi.map((c) => [c._id, c.count]));
     } catch {
       questionCounts = { error: "could not fetch" };
+      andiCounts = { error: "could not fetch" };
     }
 
     const totalQuestions = Object.values(questionCounts)
+      .filter(Number.isInteger)
+      .reduce((a, b) => a + b, 0);
+
+    const totalAndi = Object.values(andiCounts)
       .filter(Number.isInteger)
       .reduce((a, b) => a + b, 0);
 
@@ -77,6 +91,10 @@ export function startStatusServer(port = process.env.STATUS_PORT ?? 3000) {
       questions: {
         total: totalQuestions,
         byType: questionCounts,
+      },
+      andiPool: {
+        total: totalAndi,
+        byType: andiCounts,
       },
     };
 
