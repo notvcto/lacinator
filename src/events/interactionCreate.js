@@ -1,16 +1,31 @@
-import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, resolveNsfw } from "../utils/helpers.js";
+import {
+  getRandomQuestion,
+  buildQuestionEmbed,
+  buildQuestionComponents,
+  resolveNsfw,
+  rollAndiTax,
+  buildAndiTaxEmbed,
+} from "../utils/helpers.js";
 import { handleListInteraction } from "../utils/listInteractions.js";
 import { handleAndiListInteraction } from "../utils/andiListInteractions.js";
 import { renderBully } from "../commands/bully.js";
-import { AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+  AttachmentBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from "discord.js";
 import { config } from "../../config.js";
 
+// btn_random pulls from truth/nhie/wyr only — dares are too action-oriented for a random button
+const RANDOM_TYPES = ["truth", "nhie", "wyr"];
+
 const BUTTON_TYPE_MAP = {
-  btn_truth:  "truth",
-  btn_dare:   "dare",
-  btn_nhie:   "nhie",
-  btn_wyr:    "wyr",
-  btn_random: null,
+  btn_truth: "truth",
+  btn_dare: "dare",
+  btn_nhie: "nhie",
+  btn_wyr: "wyr",
+  btn_random: null, // resolved below
 };
 
 export const name = "interactionCreate";
@@ -19,7 +34,13 @@ export async function execute(interaction, commands) {
   const id = interaction.customId ?? "";
 
   // ── Andi list interactions ───────────────────────────────────────────────
-  if (id.startsWith("aln:") || id.startsWith("alsel:") || id.startsWith("alrm:") || id.startsWith("ale:") || id.startsWith("alem:")) {
+  if (
+    id.startsWith("aln:") ||
+    id.startsWith("alsel:") ||
+    id.startsWith("alrm:") ||
+    id.startsWith("ale:") ||
+    id.startsWith("alem:")
+  ) {
     return handleAndiListInteraction(interaction);
   }
 
@@ -27,8 +48,8 @@ export async function execute(interaction, commands) {
   if (
     id.startsWith("lnav:") ||
     id.startsWith("lsel:") ||
-    id.startsWith("lrm:")  ||
-    id.startsWith("le:")   ||
+    id.startsWith("lrm:") ||
+    id.startsWith("le:") ||
     id.startsWith("lem:")
   ) {
     return handleListInteraction(interaction);
@@ -38,7 +59,9 @@ export async function execute(interaction, commands) {
   if (id.startsWith("fightback:")) {
     // Andi cannot fight back
     if (interaction.user.id === config.andiUserId) {
-      return interaction.reply({ content: "Old people can't fight back — sorry not sorry 😂" });
+      return interaction.reply({
+        content: "Old people can't fight back — sorry not sorry 😂",
+      });
     }
 
     await interaction.deferReply();
@@ -49,7 +72,9 @@ export async function execute(interaction, commands) {
     try {
       originalBully = await interaction.client.users.fetch(originalBullyId);
     } catch {
-      return interaction.editReply({ content: "❌ Couldn't find the original bully." });
+      return interaction.editReply({
+        content: "❌ Couldn't find the original bully.",
+      });
     }
 
     // Roles are now reversed — button clicker fights back against the original bully
@@ -63,7 +88,7 @@ export async function execute(interaction, commands) {
       new ButtonBuilder()
         .setCustomId(`fightback:${interaction.user.id}`)
         .setLabel("Fight back! 🥊")
-        .setStyle(ButtonStyle.Danger)
+        .setStyle(ButtonStyle.Danger),
     );
 
     return interaction.editReply({ files: [attachment], components: [row] });
@@ -73,19 +98,33 @@ export async function execute(interaction, commands) {
   if (interaction.isButton() && id in BUTTON_TYPE_MAP) {
     await interaction.deferReply();
 
-    const type     = BUTTON_TYPE_MAP[id];
-    const allowR   = await resolveNsfw(interaction);
-    const question = await getRandomQuestion(type, allowR);
+    // For btn_random, pick randomly from non-dare types
+    const type =
+      id === "btn_random"
+        ? RANDOM_TYPES[Math.floor(Math.random() * RANDOM_TYPES.length)]
+        : BUTTON_TYPE_MAP[id];
+    const allowR = await resolveNsfw(interaction);
 
+    // Andi tax check
+    const taxQuestion = await rollAndiTax(interaction.user.id, type, allowR);
+    if (taxQuestion) {
+      return interaction.editReply({
+        embeds: [buildAndiTaxEmbed(taxQuestion, interaction.user)],
+        components: [buildQuestionComponents(type)],
+      });
+    }
+
+    const question = await getRandomQuestion(type, allowR);
     if (!question) {
       return interaction.editReply({
-        content: "😬 No questions found for that category. Use `/add` to stock up!",
+        content:
+          "😬 No questions found for that category. Use `/add` to stock up!",
       });
     }
 
     return interaction.editReply({
       embeds: [buildQuestionEmbed(question, interaction.user)],
-      components: [buildQuestionComponents(type ?? "random")],
+      components: [buildQuestionComponents(type)],
     });
   }
 
@@ -103,7 +142,10 @@ export async function execute(interaction, commands) {
     await command.execute(interaction);
   } catch (error) {
     console.error(`[ERROR] /${interaction.commandName}:`, error);
-    const msg = { content: "💥 Something broke on my end. Try again?", flags: 64 };
+    const msg = {
+      content: "💥 Something broke on my end. Try again?",
+      flags: 64,
+    };
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(msg);
     } else {

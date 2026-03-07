@@ -1,4 +1,9 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} from "discord.js";
 import { Question } from "../models/Question.js";
 import { AndiQuestion } from "../models/AndiQuestion.js";
 import { TrustedUser } from "../models/TrustedUser.js";
@@ -10,7 +15,11 @@ import { config } from "../../config.js";
  * @param {boolean}      allowR  — whether R-rated questions are allowed
  * @param {string|null}  rating  — explicit rating filter (PG / PG-13 / R)
  */
-export async function getRandomQuestion(type = null, allowR = false, rating = null) {
+export async function getRandomQuestion(
+  type = null,
+  allowR = false,
+  rating = null,
+) {
   const filter = { active: true };
   if (type) filter.type = type;
 
@@ -43,7 +52,6 @@ export async function resolveNsfw(interaction) {
     const channel = interaction.channel.partial
       ? await interaction.channel.fetch()
       : interaction.channel;
-    console.log(`[NSFW] channelId=${channel.id} nsfw=${channel.nsfw} partial=${interaction.channel.partial} type=${channel.type}`);
     return channel?.nsfw === true;
   } catch (err) {
     console.log(`[NSFW] fetch failed: ${err.message}`);
@@ -83,7 +91,9 @@ export function buildAndiTaxEmbed(question, requestedBy) {
     .setColor(0xff6b00)
     .setAuthor({
       name: `🎯 Andi Tax — Specially Curated for ${requestedBy.username}`,
-      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
+      iconURL:
+        requestedBy.displayAvatarURL({ dynamic: true }) ??
+        requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -94,13 +104,17 @@ export function buildAndiTaxEmbed(question, requestedBy) {
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();
-  const id = question.questionId ? `#${question.questionId}` : question._id.toString().slice(-6);
+  const id = question.questionId
+    ? `#${question.questionId}`
+    : question._id.toString().slice(-6);
 
   return new EmbedBuilder()
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
+      iconURL:
+        requestedBy.displayAvatarURL({ dynamic: true }) ??
+        requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -123,30 +137,54 @@ export function buildQuestionComponents(sourceType) {
     case "truth":
     case "dare":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_truth").setLabel("Truth").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("btn_dare").setLabel("Dare").setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_truth")
+          .setLabel("Truth")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId("btn_dare")
+          .setLabel("Dare")
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "nhie":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_nhie").setLabel("Another NHIE").setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_nhie")
+          .setLabel("Another NHIE")
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "wyr":
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_wyr").setLabel("Another WYR").setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+          .setCustomId("btn_wyr")
+          .setLabel("Another WYR")
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random")
+          .setStyle(ButtonStyle.Secondary),
       );
       break;
 
     case "random":
     default:
       row.addComponents(
-        new ButtonBuilder().setCustomId("btn_random").setLabel("Random Question").setStyle(ButtonStyle.Primary)
+        new ButtonBuilder()
+          .setCustomId("btn_random")
+          .setLabel("Random Question")
+          .setStyle(ButtonStyle.Primary),
       );
       break;
   }

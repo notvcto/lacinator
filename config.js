@@ -10,11 +10,11 @@ export const config = {
 
   // ── Andi Tax ──────────────────────────────────────────────────────────────
   // Andi's Discord user ID — the victim
-  andiUserId: "562950696119566336",
+  andiUserId: "1080137111287640144",
 
   // Probability (0–1) that Andi's question pulls from the special pool
   // 0.20 = 20% chance. Set to 1.0 for full chaos.
-  andiTaxRate: 0.2,
+  andiTaxRate: 1.0,
 
   // Default number of questions per page in /list
   listPageSize: 10,
