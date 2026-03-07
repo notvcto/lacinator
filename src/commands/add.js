@@ -35,7 +35,7 @@ export async function execute(interaction) {
   const rating = interaction.options.getString("rating") ?? "PG";
 
   if (!text) {
-    return interaction.reply({ content: "❌ Question text can't be empty.", ephemeral: true });
+    return interaction.reply({ content: "❌ Question text can't be empty.", flags: 64 });
   }
 
   const existing = await Question.findOne({
@@ -46,7 +46,7 @@ export async function execute(interaction) {
   if (existing) {
     return interaction.reply({
       content: `⚠️ That question already exists in the **${existing.type}** pool (ID: #${existing.questionId}).`,
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -65,7 +65,7 @@ export async function execute(interaction) {
 
   return interaction.reply({
     content: `✅ Added **${type}** [${question.rating}] as ID **#${question.questionId}**!\n> ${question.text}\n\n📦 There are now **${poolCount}** questions in the ${type} pool.`,
-    ephemeral: true,
+    flags: 64,
   });
 }
 

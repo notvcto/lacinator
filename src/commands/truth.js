@@ -16,7 +16,7 @@ export async function execute(interaction) {
   const question = await getRandomQuestion("truth", allowR, rating);
 
   if (question?.__blocked) {
-    return interaction.reply({ content: "🔞 R-rated questions are only available in age-restricted channels.", ephemeral: true });
+    return interaction.reply({ content: "🔞 R-rated questions are only available in age-restricted channels.", flags: 64 });
   }
   if (!question) return interaction.reply(emptyReply("truth"));
 

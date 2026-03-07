@@ -59,5 +59,5 @@ export async function execute(interaction) {
     embed.setFooter({ text: "Some commands are restricted to trusted users." });
   }
 
-  return interaction.reply({ embeds: [embed], ephemeral: true });
+  return interaction.reply({ embeds: [embed], flags: 64 });
 }

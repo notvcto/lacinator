@@ -21,7 +21,7 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
   if (!isOwner(interaction.user.id)) {
-    return interaction.reply({ content: "❌ Only bot owners can manage trusted users.", ephemeral: true });
+    return interaction.reply({ content: "❌ Only bot owners can manage trusted users.", flags: 64 });
   }
 
   const sub = interaction.options.getSubcommand();
@@ -30,12 +30,12 @@ export async function execute(interaction) {
     const target = interaction.options.getUser("user");
 
     if (isOwner(target.id)) {
-      return interaction.reply({ content: "ℹ️ That user is already an owner.", ephemeral: true });
+      return interaction.reply({ content: "ℹ️ That user is already an owner.", flags: 64 });
     }
 
     const existing = await TrustedUser.findOne({ userId: target.id });
     if (existing) {
-      return interaction.reply({ content: `⚠️ **${target.username}** is already trusted.`, ephemeral: true });
+      return interaction.reply({ content: `⚠️ **${target.username}** is already trusted.`, flags: 64 });
     }
 
     await TrustedUser.create({
@@ -47,7 +47,7 @@ export async function execute(interaction) {
 
     return interaction.reply({
       content: `✅ **${target.username}** is now trusted and can add/edit/remove questions.`,
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -55,17 +55,17 @@ export async function execute(interaction) {
     const target = interaction.options.getUser("user");
 
     if (isOwner(target.id)) {
-      return interaction.reply({ content: "❌ Can't remove an owner via /trust — edit config.js.", ephemeral: true });
+      return interaction.reply({ content: "❌ Can't remove an owner via /trust — edit config.js.", flags: 64 });
     }
 
     const deleted = await TrustedUser.findOneAndDelete({ userId: target.id });
     if (!deleted) {
-      return interaction.reply({ content: `❌ **${target.username}** isn't in the trusted list.`, ephemeral: true });
+      return interaction.reply({ content: `❌ **${target.username}** isn't in the trusted list.`, flags: 64 });
     }
 
     return interaction.reply({
       content: `🗑️ Removed **${target.username}** from the trusted list.`,
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -82,6 +82,6 @@ export async function execute(interaction) {
       )
       .setFooter({ text: `Owners are managed via config.js` });
 
-    return interaction.reply({ embeds: [embed], ephemeral: true });
+    return interaction.reply({ embeds: [embed], flags: 64 });
   }
 }

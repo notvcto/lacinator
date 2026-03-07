@@ -38,13 +38,13 @@ export async function execute(interaction) {
   const newRating  = interaction.options.getString("rating");
 
   if (!newText && !newType && !newRating) {
-    return interaction.reply({ content: "❌ Provide at least one field to edit.", ephemeral: true });
+    return interaction.reply({ content: "❌ Provide at least one field to edit.", flags: 64 });
   }
 
   const question = await Question.findOne({ questionId, active: true });
 
   if (!question) {
-    return interaction.reply({ content: `❌ No active question found with ID **#${questionId}**.`, ephemeral: true });
+    return interaction.reply({ content: `❌ No active question found with ID **#${questionId}**.`, flags: 64 });
   }
 
   const before = { text: question.text, type: question.type, rating: question.rating };
@@ -62,6 +62,6 @@ export async function execute(interaction) {
 
   return interaction.reply({
     content: `✏️ Updated **#${question.questionId}**:\n${changes.map((c) => `• ${c}`).join("\n")}`,
-    ephemeral: true,
+    flags: 64,
   });
 }

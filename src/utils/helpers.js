@@ -1,9 +1,4 @@
-import {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} from "discord.js";
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { Question } from "../models/Question.js";
 import { TrustedUser } from "../models/TrustedUser.js";
 import { config } from "../../config.js";
@@ -14,11 +9,7 @@ import { config } from "../../config.js";
  * @param {boolean}      allowR  — whether R-rated questions are allowed
  * @param {string|null}  rating  — explicit rating filter (PG / PG-13 / R)
  */
-export async function getRandomQuestion(
-  type = null,
-  allowR = false,
-  rating = null,
-) {
+export async function getRandomQuestion(type = null, allowR = false, rating = null) {
   const filter = { active: true };
   if (type) filter.type = type;
 
@@ -40,23 +31,16 @@ export async function getRandomQuestion(
 
 /**
  * Resolve whether the interaction is in an age-restricted channel.
- * interaction.channel can be a partial without nsfw populated, so we
- * always fetch the full channel from the guild's channel manager.
+ * interaction.channel is often a partial — always fetch the full object.
  */
 export async function resolveNsfw(interaction) {
   try {
-    // Best path: fetch full channel from guild (handles partials)
-    if (interaction.guild && interaction.channelId) {
-      const channel = await interaction.guild.channels.fetch(
-        interaction.channelId,
-      );
-      return channel?.nsfw === true;
-    }
-
-    // DM / group context — never age-restricted
-    return false;
+    if (!interaction.channel) return false;
+    const channel = interaction.channel.partial
+      ? await interaction.channel.fetch()
+      : interaction.channel;
+    return channel?.nsfw === true;
   } catch {
-    // No access or fetch failed — fail safe
     return false;
   }
 }
@@ -68,17 +52,13 @@ export async function resolveNsfw(interaction) {
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();
-  const id = question.questionId
-    ? `#${question.questionId}`
-    : question._id.toString().slice(-6);
+  const id = question.questionId ? `#${question.questionId}` : question._id.toString().slice(-6);
 
   return new EmbedBuilder()
     .setColor(color)
     .setAuthor({
       name: `Requested by ${requestedBy.username}`,
-      iconURL:
-        requestedBy.displayAvatarURL({ dynamic: true }) ??
-        requestedBy.defaultAvatarURL,
+      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
     })
     .setDescription(`**${question.text}**`)
     .setFooter({
@@ -101,54 +81,30 @@ export function buildQuestionComponents(sourceType) {
     case "truth":
     case "dare":
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_truth")
-          .setLabel("Truth")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId("btn_dare")
-          .setLabel("Dare")
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random")
-          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("btn_truth").setLabel("Truth").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_dare").setLabel("Dare").setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
       );
       break;
 
     case "nhie":
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_nhie")
-          .setLabel("Another NHIE")
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random")
-          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("btn_nhie").setLabel("Another NHIE").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
       );
       break;
 
     case "wyr":
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_wyr")
-          .setLabel("Another WYR")
-          .setStyle(ButtonStyle.Primary),
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random")
-          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId("btn_wyr").setLabel("Another WYR").setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random").setStyle(ButtonStyle.Secondary)
       );
       break;
 
     case "random":
     default:
       row.addComponents(
-        new ButtonBuilder()
-          .setCustomId("btn_random")
-          .setLabel("Random Question")
-          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId("btn_random").setLabel("Random Question").setStyle(ButtonStyle.Primary)
       );
       break;
   }
@@ -173,13 +129,13 @@ export function isOwner(userId) {
 }
 
 export function unauthorizedReply() {
-  return { content: "❌ You're not on the list, bestie.", ephemeral: true };
+  return { content: "❌ You're not on the list, bestie.", flags: 64 };
 }
 
 export function emptyReply(type) {
   const label = type ? config.labels[type] : "any category";
   return {
     content: `😬 No questions found for **${label}**. Use \`/add\` to add some!`,
-    ephemeral: true,
+    flags: 64,
   };
 }

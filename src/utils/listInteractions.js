@@ -113,7 +113,7 @@ export function buildDetailMessage(question) {
       .setStyle(ButtonStyle.Danger)
   );
 
-  return { embeds: [embed], components: [row], ephemeral: true };
+  return { embeds: [embed], components: [row], flags: 64 };
 }
 
 // ── Edit modal ────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export async function handleListInteraction(interaction) {
 
   // Auth check for all list interactions
   if (!(await isAuthorized(interaction.user.id))) {
-    return interaction.reply({ content: "❌ You're not on the list, bestie.", ephemeral: true });
+    return interaction.reply({ content: "❌ You're not on the list, bestie.", flags: 64 });
   }
 
   // ── Page navigation button ─────────────────────────────────────────────
@@ -177,7 +177,7 @@ export async function handleListInteraction(interaction) {
     const question   = await Question.findOne({ questionId, active: true });
 
     if (!question) {
-      return interaction.reply({ content: "❌ That question no longer exists.", ephemeral: true });
+      return interaction.reply({ content: "❌ That question no longer exists.", flags: 64 });
     }
 
     return interaction.reply(buildDetailMessage(question));
@@ -189,7 +189,7 @@ export async function handleListInteraction(interaction) {
     const question   = await Question.findOne({ questionId, active: true });
 
     if (!question) {
-      return interaction.reply({ content: "❌ Question not found or already removed.", ephemeral: true });
+      return interaction.reply({ content: "❌ Question not found or already removed.", flags: 64 });
     }
 
     question.active = false;
@@ -208,7 +208,7 @@ export async function handleListInteraction(interaction) {
     const question   = await Question.findOne({ questionId, active: true });
 
     if (!question) {
-      return interaction.reply({ content: "❌ Question not found.", ephemeral: true });
+      return interaction.reply({ content: "❌ Question not found.", flags: 64 });
     }
 
     return interaction.showModal(buildEditModal(question));
@@ -220,7 +220,7 @@ export async function handleListInteraction(interaction) {
     const question   = await Question.findOne({ questionId, active: true });
 
     if (!question) {
-      return interaction.reply({ content: "❌ Question not found.", ephemeral: true });
+      return interaction.reply({ content: "❌ Question not found.", flags: 64 });
     }
 
     const newText   = interaction.fields.getTextInputValue("text").trim();
@@ -231,10 +231,10 @@ export async function handleListInteraction(interaction) {
     const validRatings = ["PG", "PG-13", "R"];
 
     if (!validTypes.includes(newType)) {
-      return interaction.reply({ content: `❌ Invalid type. Use one of: ${validTypes.join(", ")}`, ephemeral: true });
+      return interaction.reply({ content: `❌ Invalid type. Use one of: ${validTypes.join(", ")}`, flags: 64 });
     }
     if (!validRatings.includes(newRating)) {
-      return interaction.reply({ content: `❌ Invalid rating. Use one of: ${validRatings.join(", ")}`, ephemeral: true });
+      return interaction.reply({ content: `❌ Invalid rating. Use one of: ${validRatings.join(", ")}`, flags: 64 });
     }
 
     question.text   = newText;
@@ -244,7 +244,7 @@ export async function handleListInteraction(interaction) {
 
     return interaction.reply({
       content: `✏️ Updated **#${question.questionId}** — ${question.text}`,
-      ephemeral: true,
+      flags: 64,
     });
   }
 }

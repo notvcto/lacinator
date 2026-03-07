@@ -52,14 +52,14 @@ export async function execute(interaction, commands) {
 
   if (!command) {
     console.warn(`[WARN] Unknown command: ${interaction.commandName}`);
-    return interaction.reply({ content: "❓ Unknown command.", ephemeral: true });
+    return interaction.reply({ content: "❓ Unknown command.", flags: 64 });
   }
 
   try {
     await command.execute(interaction);
   } catch (error) {
     console.error(`[ERROR] /${interaction.commandName}:`, error);
-    const msg = { content: "💥 Something broke on my end. Try again?", ephemeral: true };
+    const msg = { content: "💥 Something broke on my end. Try again?", flags: 64 };
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp(msg);
     } else {

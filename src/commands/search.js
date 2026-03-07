@@ -37,7 +37,7 @@ export async function execute(interaction) {
   if (!results.length) {
     return interaction.reply({
       content: `🔍 No questions found matching **"${keyword}"**.`,
-      ephemeral: true,
+      flags: 64,
     });
   }
 
@@ -51,7 +51,7 @@ export async function execute(interaction) {
     .setDescription(lines.join("\n\n"))
     .setFooter({ text: `${results.length} result${results.length !== 1 ? "s" : ""} (max 15 shown)` });
 
-  return interaction.reply({ embeds: [embed], ephemeral: true });
+  return interaction.reply({ embeds: [embed], flags: 64 });
 }
 
 function escapeRegex(str) {

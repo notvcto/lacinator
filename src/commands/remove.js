@@ -18,7 +18,7 @@ export async function execute(interaction) {
   const question = await Question.findOne({ questionId, active: true });
 
   if (!question) {
-    return interaction.reply({ content: `❌ No active question found with ID **#${questionId}**.`, ephemeral: true });
+    return interaction.reply({ content: `❌ No active question found with ID **#${questionId}**.`, flags: 64 });
   }
 
   question.active = false;
@@ -26,6 +26,6 @@ export async function execute(interaction) {
 
   return interaction.reply({
     content: `🗑️ Removed **${question.type}** question **#${question.questionId}**:\n> ${question.text}`,
-    ephemeral: true,
+    flags: 64,
   });
 }

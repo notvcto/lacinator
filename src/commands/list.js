@@ -26,5 +26,5 @@ export async function execute(interaction) {
   const page = interaction.options.getInteger("page") ?? 1;
 
   const msg = await buildListMessage(page, type);
-  return interaction.reply({ ...msg, ephemeral: true });
+  return interaction.reply({ ...msg, flags: 64 });
 }
