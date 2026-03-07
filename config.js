@@ -14,7 +14,7 @@ export const config = {
 
   // Probability (0–1) that Andi's question pulls from the special pool
   // 0.20 = 20% chance. Set to 1.0 for full chaos.
-  andiTaxRate: 1.0,
+  andiTaxRate: 0.2,
 
   // Default number of questions per page in /list
   listPageSize: 10,
