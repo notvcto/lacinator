@@ -10,7 +10,7 @@ export const config = {
 
   // ── Andi Tax ──────────────────────────────────────────────────────────────
   // Andi's Discord user ID — the victim
-  andiUserId: "1080137111287640144",
+  andiUserId: "562950696119566336",
 
   // Probability (0–1) that Andi's question pulls from the special pool
   // 0.20 = 20% chance. Set to 1.0 for full chaos.
