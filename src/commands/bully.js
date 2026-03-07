@@ -24,22 +24,22 @@ const GITHUB_RAW =
 
 const BULLY_TEMPLATES = [
   {
-    url: `${GITHUB_RAW}/dropkick.jpg`,
-    bully: { x: 250, y: 150, r: 60 },
-    target: { x: 600, y: 300, r: 60 },
-    message: "{bully} dropkicked {target} back to the lobby.",
+    url: `${GITHUB_RAW}/image1.jpg`,
+    bully: { x: 452, y: 47, r: 26 },
+    target: { x: 390, y: 290, r: 26 },
+    message: "{bully} knocks {target} down.",
   },
   {
-    url: `${GITHUB_RAW}/slap.jpg`,
-    bully: { x: 380, y: 210, r: 80 },
-    target: { x: 180, y: 250, r: 80 },
-    message: "{bully} knocked some sense into {target}.",
+    url: `${GITHUB_RAW}/image2.jpg`,
+    bully: { x: 160, y: 160, r: 24 },
+    target: { x: 480, y: 100, r: 38 },
+    message: "{bully} punches {target} in the face.",
   },
   {
-    url: `${GITHUB_RAW}/sparta.jpg`,
-    bully: { x: 300, y: 180, r: 70 },
-    target: { x: 650, y: 400, r: 50 },
-    message: "THIS. IS. LACINATOR! 🥾",
+    url: `${GITHUB_RAW}/image3.jpg`,
+    bully: { x: 80, y: 43, r: 18 },
+    target: { x: 124, y: 78, r: 19 },
+    message: "{bully} knees {target}.",
   },
 ];
 
