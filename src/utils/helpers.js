@@ -40,35 +40,25 @@ export async function getRandomQuestion(
 
 /**
  * Resolve whether the interaction is in an age-restricted channel.
- *
- * Priority:
- * 1. interaction.channel.nsfw — present when the bot is a guild member
- * 2. interaction.channelId raw data — Discord sends this in the payload
- *    even for user-install contexts where the bot isn't in the guild
- * 3. Attempt a channel fetch as a last resort
- * 4. Default to false (safe fallback)
+ * interaction.channel can be a partial without nsfw populated, so we
+ * always fetch the full channel from the guild's channel manager.
  */
 export async function resolveNsfw(interaction) {
-  // Fastest path — channel already resolved and has nsfw flag
-  if (interaction.channel?.nsfw === true) return true;
-  if (interaction.channel?.nsfw === false) return false;
+  try {
+    // Best path: fetch full channel from guild (handles partials)
+    if (interaction.guild && interaction.channelId) {
+      const channel = await interaction.guild.channels.fetch(
+        interaction.channelId,
+      );
+      return channel?.nsfw === true;
+    }
 
-  // Discord includes raw channel data in the interaction payload for
-  // user-install contexts — check it directly before trying a fetch
-  const rawChannel =
-    interaction.raw?.channel ??
-    interaction.options?.resolved?.channels?.first?.();
-  if (rawChannel?.nsfw === true) return true;
-
-  // Last resort: try fetching (works when bot is a guild member)
-  if (interaction.channelId) {
-    const channel = await interaction.client.channels
-      .fetch(interaction.channelId)
-      .catch(() => null);
-    if (channel?.nsfw === true) return true;
+    // DM / group context — never age-restricted
+    return false;
+  } catch {
+    // No access or fetch failed — fail safe
+    return false;
   }
-
-  return false;
 }
 
 /**
