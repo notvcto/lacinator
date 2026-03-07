@@ -8,30 +8,38 @@ import {
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { config } from "../../config.js";
 
+// @napi-rs/canvas can't load URLs directly — fetch to Buffer first
+async function fetchImage(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status} ${url}`);
+  const buf = await res.arrayBuffer();
+  return loadImage(Buffer.from(buf));
+}
+
 // ── The Arsenal ──────────────────────────────────────────────────────────────
 // Replace YOUR_GITHUB_USER and YOUR_REPO with your actual values.
 // Images are loaded directly from GitHub so Render never has to touch the filesystem.
 const GITHUB_RAW =
-  "https://raw.githubusercontent.com/notvcto/lacinator/refs/heads/main/assets/";
+  "https://raw.githubusercontent.com/notvcto/lacinator/refs/heads/main/assets";
 
 const BULLY_TEMPLATES = [
   {
-    filename: `${GITHUB_RAW}/image1.jpg`,
-    bully: { x: 452, y: 47, r: 26 },
-    target: { x: 390, y: 290, r: 26 },
-    message: "{bully} knocks {target} down.",
+    url: `${GITHUB_RAW}/dropkick.jpg`,
+    bully: { x: 250, y: 150, r: 60 },
+    target: { x: 600, y: 300, r: 60 },
+    message: "{bully} dropkicked {target} back to the lobby.",
   },
   {
-    filename: `${GITHUB_RAW}/image2.jpg`,
-    bully: { x: 160, y: 160, r: 24 },
-    target: { x: 480, y: 100, r: 38 },
-    message: "{bully} punches {target} in the face.",
+    url: `${GITHUB_RAW}/slap.jpg`,
+    bully: { x: 380, y: 210, r: 80 },
+    target: { x: 180, y: 250, r: 80 },
+    message: "{bully} knocked some sense into {target}.",
   },
   {
-    filename: `${GITHUB_RAW}/image3.jpg`,
-    bully: { x: 80, y: 43, r: 18 },
-    target: { x: 124, y: 78, r: 19 },
-    message: "{bully} knees {target}.",
+    url: `${GITHUB_RAW}/sparta.jpg`,
+    bully: { x: 300, y: 180, r: 70 },
+    target: { x: 650, y: 400, r: 50 },
+    message: "THIS. IS. LACINATOR! 🥾",
   },
 ];
 
@@ -42,9 +50,9 @@ export async function renderBully(bully, target) {
   let bullyImg, targetImg, bgImg;
   try {
     [bullyImg, targetImg, bgImg] = await Promise.all([
-      loadImage(bully.displayAvatarURL({ extension: "png", size: 256 })),
-      loadImage(target.displayAvatarURL({ extension: "png", size: 256 })),
-      loadImage(template.url),
+      fetchImage(bully.displayAvatarURL({ extension: "png", size: 256 })),
+      fetchImage(target.displayAvatarURL({ extension: "png", size: 256 })),
+      fetchImage(template.url),
     ]);
   } catch (err) {
     console.error("[BULLY] Failed to load images:", err);

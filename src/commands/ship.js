@@ -1,6 +1,13 @@
 import { SlashCommandBuilder, AttachmentBuilder } from "discord.js";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 
+async function fetchImage(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status} ${url}`);
+  const buf = await res.arrayBuffer();
+  return loadImage(Buffer.from(buf));
+}
+
 export const data = new SlashCommandBuilder()
   .setName("ship")
   .setDescription("Find out how compatible two people are 💘")
@@ -120,8 +127,8 @@ export async function execute(interaction) {
   const label = compatMessage(pct);
 
   const [avatar1, avatar2] = await Promise.all([
-    loadImage(user1.displayAvatarURL({ extension: "png", size: 256 })),
-    loadImage(user2.displayAvatarURL({ extension: "png", size: 256 })),
+    fetchImage(user1.displayAvatarURL({ extension: "png", size: 256 })),
+    fetchImage(user2.displayAvatarURL({ extension: "png", size: 256 })),
   ]);
 
   // ── Layout constants ──────────────────────────────────────────────────────
