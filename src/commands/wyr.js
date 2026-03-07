@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
-import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, resolveNsfw, emptyReply } from "../utils/helpers.js";
+import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, buildAndiTaxEmbed, rollAndiTax, resolveNsfw, emptyReply } from "../utils/helpers.js";
 
 export const data = new SlashCommandBuilder()
   .setName("wyr")
@@ -11,16 +11,23 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function execute(interaction) {
-  const rating   = interaction.options.getString("rating");
-  const allowR   = await resolveNsfw(interaction);
-  const question = await getRandomQuestion("wyr", allowR, rating);
+  await interaction.deferReply();
+  const rating = interaction.options.getString("rating");
+  const allowR = await resolveNsfw(interaction);
 
-  if (question?.__blocked) {
-    return interaction.reply({ content: "🔞 R-rated questions are only available in age-restricted channels.", flags: 64 });
+  const taxQuestion = await rollAndiTax(interaction.user.id, "wyr", allowR);
+  if (taxQuestion) {
+    return interaction.editReply({
+      embeds: [buildAndiTaxEmbed(taxQuestion, interaction.user)],
+      components: [buildQuestionComponents("wyr")],
+    });
   }
-  if (!question) return interaction.reply(emptyReply("wyr"));
 
-  return interaction.reply({
+  const question = await getRandomQuestion("wyr", allowR, rating);
+  if (question?.__blocked) return interaction.editReply({ content: "🔞 R-rated questions are only available in age-restricted channels." });
+  if (!question) return interaction.editReply(emptyReply("wyr"));
+
+  return interaction.editReply({
     embeds: [buildQuestionEmbed(question, interaction.user)],
     components: [buildQuestionComponents("wyr")],
   });

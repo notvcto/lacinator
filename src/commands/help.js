@@ -16,6 +16,8 @@ export async function execute(interaction) {
     ["/nhie",   "Get a Never Have I Ever prompt."],
     ["/wyr",    "Get a Would You Rather question."],
     ["/random", "Get a random question from any category."],
+    ["/ship",   "Find out how compatible two people are 💘"],
+    ["/bully",  "Deploy the boot 🥾"],
     ["/stats",  "See the question pool breakdown."],
     ["/ping",   "Check if Lacinator is alive."],
   ];
@@ -26,7 +28,9 @@ export async function execute(interaction) {
     ["/edit",   "Edit a question by ID."],
     ["/remove", "Remove a question by ID."],
     ["/list",   "Browse the question pool."],
-    ["/search", "Search questions by keyword."],
+    ["/search",   "Search questions by keyword."],
+    ["/andiadd",  "Add a question to the Andi special pool 🎯"],
+    ["/andilist", "Browse & manage the Andi pool 🎯"],
   ];
 
   // ── Owner commands ─────────────────────────────────────────────────────

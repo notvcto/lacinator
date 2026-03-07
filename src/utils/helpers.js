@@ -1,5 +1,6 @@
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { Question } from "../models/Question.js";
+import { AndiQuestion } from "../models/AndiQuestion.js";
 import { TrustedUser } from "../models/TrustedUser.js";
 import { config } from "../../config.js";
 
@@ -35,20 +36,61 @@ export async function getRandomQuestion(type = null, allowR = false, rating = nu
  */
 export async function resolveNsfw(interaction) {
   try {
-    if (!interaction.channel) return false;
+    if (!interaction.channel) {
+      console.log("[NSFW] No channel on interaction");
+      return false;
+    }
     const channel = interaction.channel.partial
       ? await interaction.channel.fetch()
       : interaction.channel;
+    console.log(`[NSFW] channelId=${channel.id} nsfw=${channel.nsfw} partial=${interaction.channel.partial} type=${channel.type}`);
     return channel?.nsfw === true;
-  } catch {
+  } catch (err) {
+    console.log(`[NSFW] fetch failed: ${err.message}`);
     return false;
   }
 }
 
 /**
- * Build a Discord embed matching the ToD bot style.
- * Footer: Type | Rating | ID: #42 | Added by: username
+ * Roll the Andi Tax. Returns an AndiQuestion if triggered, null otherwise.
+ * Only fires when the requesting user is Andi AND the pool isn't empty.
  */
+export async function rollAndiTax(userId, type = null, allowR = false) {
+  if (userId !== config.andiUserId) return null;
+  if (Math.random() > config.andiTaxRate) return null;
+
+  const filter = { active: true };
+  if (type) filter.type = type;
+  if (!allowR) filter.rating = { $ne: "R" };
+
+  const [question] = await AndiQuestion.aggregate([
+    { $match: filter },
+    { $sample: { size: 1 } },
+  ]);
+
+  return question ?? null;
+}
+
+/**
+ * Build the special Andi Tax embed — same structure as normal but orange
+ * and with a spicy author line.
+ */
+export function buildAndiTaxEmbed(question, requestedBy) {
+  const typeLabel = question.type.toUpperCase();
+  const id = `#${question.questionId}`;
+
+  return new EmbedBuilder()
+    .setColor(0xff6b00)
+    .setAuthor({
+      name: `🎯 Andi Tax — Specially Curated for ${requestedBy.username}`,
+      iconURL: requestedBy.displayAvatarURL({ dynamic: true }) ?? requestedBy.defaultAvatarURL,
+    })
+    .setDescription(`**${question.text}**`)
+    .setFooter({
+      text: `Type: ${typeLabel} | Rating: ${question.rating} | ID: ${id} | Added by: ${question.addedByUsername}`,
+    });
+}
+
 export function buildQuestionEmbed(question, requestedBy) {
   const color = config.colors[question.type];
   const typeLabel = question.type.toUpperCase();

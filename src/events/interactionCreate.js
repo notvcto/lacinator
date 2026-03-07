@@ -1,5 +1,9 @@
 import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, resolveNsfw } from "../utils/helpers.js";
 import { handleListInteraction } from "../utils/listInteractions.js";
+import { handleAndiListInteraction } from "../utils/andiListInteractions.js";
+import { renderBully } from "../commands/bully.js";
+import { AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { config } from "../../config.js";
 
 const BUTTON_TYPE_MAP = {
   btn_truth:  "truth",
@@ -12,9 +16,14 @@ const BUTTON_TYPE_MAP = {
 export const name = "interactionCreate";
 
 export async function execute(interaction, commands) {
+  const id = interaction.customId ?? "";
+
+  // ── Andi list interactions ───────────────────────────────────────────────
+  if (id.startsWith("aln:") || id.startsWith("alsel:") || id.startsWith("alrm:") || id.startsWith("ale:") || id.startsWith("alem:")) {
+    return handleAndiListInteraction(interaction);
+  }
 
   // ── List interactions (nav buttons, select menu, edit modal, remove) ─────
-  const id = interaction.customId ?? "";
   if (
     id.startsWith("lnav:") ||
     id.startsWith("lsel:") ||
@@ -23,6 +32,41 @@ export async function execute(interaction, commands) {
     id.startsWith("lem:")
   ) {
     return handleListInteraction(interaction);
+  }
+
+  // ── Fight back button ────────────────────────────────────────────────────
+  if (id.startsWith("fightback:")) {
+    // Andi cannot fight back
+    if (interaction.user.id === config.andiUserId) {
+      return interaction.reply({ content: "Old people can't fight back — sorry not sorry 😂" });
+    }
+
+    await interaction.deferReply();
+
+    // The original bully's ID is encoded in the customId
+    const originalBullyId = id.split(":")[1];
+    let originalBully;
+    try {
+      originalBully = await interaction.client.users.fetch(originalBullyId);
+    } catch {
+      return interaction.editReply({ content: "❌ Couldn't find the original bully." });
+    }
+
+    // Roles are now reversed — button clicker fights back against the original bully
+    const buffer = await renderBully(interaction.user, originalBully);
+    if (!buffer) {
+      return interaction.editReply({ content: "❌ Couldn't load images." });
+    }
+
+    const attachment = new AttachmentBuilder(buffer, { name: "fightback.png" });
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`fightback:${interaction.user.id}`)
+        .setLabel("Fight back! 🥊")
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    return interaction.editReply({ files: [attachment], components: [row] });
   }
 
   // ── Game buttons ─────────────────────────────────────────────────────────

@@ -8,6 +8,14 @@ export const config = {
   // Right-click a user in Discord → "Copy User ID" (needs Developer Mode on)
   owners: ["1080137111287640144"],
 
+  // ── Andi Tax ──────────────────────────────────────────────────────────────
+  // Andi's Discord user ID — the victim
+  andiUserId: "562950696119566336",
+
+  // Probability (0–1) that Andi's question pulls from the special pool
+  // 0.20 = 20% chance. Set to 1.0 for full chaos.
+  andiTaxRate: 0.2,
+
   // Default number of questions per page in /list
   listPageSize: 10,
 
@@ -18,6 +26,7 @@ export const config = {
     nhie: 0x57f287, // green
     wyr: 0xfee75c, // yellow
     random: 0xeb459e, // pink
+    andi: 0xff0000,
   },
 
   // Display labels per type
