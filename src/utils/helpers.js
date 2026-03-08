@@ -196,13 +196,21 @@ export function buildQuestionComponents(sourceType) {
 }
 
 /**
- * Return a copy of a message's components with all buttons disabled.
+ * Return rebuilt ActionRows with all buttons disabled.
+ * discord.js components are class instances — must reconstruct, not spread.
  */
 export function disableComponents(components) {
-  return components.map((row) => ({
-    ...row,
-    components: row.components.map((c) => ({ ...c, disabled: true })),
-  }));
+  return components.map((row) =>
+    new ActionRowBuilder().addComponents(
+      row.components.map((c) =>
+        new ButtonBuilder()
+          .setCustomId(c.customId)
+          .setLabel(c.label)
+          .setStyle(c.style)
+          .setDisabled(true),
+      ),
+    ),
+  );
 }
 
 /**
