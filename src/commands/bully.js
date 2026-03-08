@@ -1,10 +1,4 @@
-import {
-  SlashCommandBuilder,
-  AttachmentBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-} from "discord.js";
+import { SlashCommandBuilder, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { config } from "../../config.js";
 
@@ -19,8 +13,7 @@ async function fetchImage(url) {
 // ── The Arsenal ──────────────────────────────────────────────────────────────
 // Replace YOUR_GITHUB_USER and YOUR_REPO with your actual values.
 // Images are loaded directly from GitHub so Render never has to touch the filesystem.
-const GITHUB_RAW =
-  "https://raw.githubusercontent.com/notvcto/lacinator/refs/heads/main/assets";
+const GITHUB_RAW = "https://raw.githubusercontent.com/notvcto/lacinator/refs/heads/main/assets";
 
 const BULLY_TEMPLATES = [
   {
@@ -44,8 +37,7 @@ const BULLY_TEMPLATES = [
 ];
 
 export async function renderBully(bully, target) {
-  const template =
-    BULLY_TEMPLATES[Math.floor(Math.random() * BULLY_TEMPLATES.length)];
+  const template = BULLY_TEMPLATES[Math.floor(Math.random() * BULLY_TEMPLATES.length)];
 
   let bullyImg, targetImg, bgImg;
   try {
@@ -59,10 +51,10 @@ export async function renderBully(bully, target) {
     return null;
   }
 
-  const W = bgImg.width;
-  const H = bgImg.height;
+  const W      = bgImg.width;
+  const H      = bgImg.height;
   const canvas = createCanvas(W, H);
-  const ctx = canvas.getContext("2d");
+  const ctx    = canvas.getContext("2d");
 
   ctx.drawImage(bgImg, 0, 0, W, H);
 
@@ -88,50 +80,36 @@ export async function renderBully(bully, target) {
 
   function drawLabel(text, x, y, color = "#ffffff") {
     ctx.save();
-    ctx.font = "bold 16px sans-serif";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "#000000";
-    ctx.shadowBlur = 6;
-    ctx.fillStyle = color;
+    ctx.font          = "bold 16px sans-serif";
+    ctx.textAlign     = "center";
+    ctx.shadowColor   = "#000000";
+    ctx.shadowBlur    = 6;
+    ctx.fillStyle     = color;
     ctx.fillText(text, x, y);
     ctx.restore();
   }
 
-  drawRing(template.bully.x, template.bully.y, template.bully.r, "#5865f2");
-  drawAvatar(bullyImg, template.bully.x, template.bully.y, template.bully.r);
-  drawLabel(
-    bully.username,
-    template.bully.x,
-    template.bully.y + template.bully.r + 18,
-  );
+  drawRing(template.bully.x,  template.bully.y,  template.bully.r,  "#5865f2");
+  drawAvatar(bullyImg,  template.bully.x,  template.bully.y,  template.bully.r);
+  drawLabel(bully.username,  template.bully.x,  template.bully.y  + template.bully.r  + 18);
 
   drawRing(template.target.x, template.target.y, template.target.r, "#ed4245");
-  drawAvatar(
-    targetImg,
-    template.target.x,
-    template.target.y,
-    template.target.r,
-  );
-  drawLabel(
-    target.username,
-    template.target.x,
-    template.target.y + template.target.r + 18,
-    "#ed4245",
-  );
+  drawAvatar(targetImg, template.target.x, template.target.y, template.target.r);
+  drawLabel(target.username, template.target.x, template.target.y + template.target.r + 18, "#ed4245");
 
   const flavorText = template.message
     .replace("{bully}", bully.username)
     .replace("{target}", target.username);
 
   ctx.save();
-  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+  ctx.fillStyle    = "rgba(0, 0, 0, 0.55)";
   ctx.fillRect(0, H - 40, W, 40);
-  ctx.font = "bold 18px sans-serif";
-  ctx.fillStyle = "#ffffff";
-  ctx.textAlign = "center";
+  ctx.font         = "bold 18px sans-serif";
+  ctx.fillStyle    = "#ffffff";
+  ctx.textAlign    = "center";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = "#000000";
-  ctx.shadowBlur = 4;
+  ctx.shadowColor  = "#000000";
+  ctx.shadowBlur   = 4;
   ctx.fillText(flavorText, W / 2, H - 20);
   ctx.restore();
 
@@ -142,32 +120,23 @@ export const data = new SlashCommandBuilder()
   .setName("bully")
   .setDescription("Deploy the boot 🥾")
   .addUserOption((opt) =>
-    opt
-      .setName("target")
-      .setDescription("Who's getting bullied? (defaults to Andi)")
-      .setRequired(false),
+    opt.setName("target").setDescription("Who's getting bullied? (defaults to Andi)").setRequired(false)
   );
 
 export async function execute(interaction) {
   await interaction.deferReply();
 
-  const bully = interaction.user;
-  const target =
-    interaction.options.getUser("target") ??
-    (await interaction.client.users.fetch(config.andiUserId).catch(() => null));
+  const bully  = interaction.user;
+  const target = interaction.options.getUser("target")
+    ?? await interaction.client.users.fetch(config.andiUserId).catch(() => null);
 
   if (!target) {
-    return interaction.editReply({
-      content: "❌ Couldn't find the target user.",
-    });
+    return interaction.editReply({ content: "❌ Couldn't find the target user." });
   }
 
   const buffer = await renderBully(bully, target);
   if (!buffer) {
-    return interaction.editReply({
-      content:
-        "❌ Couldn't load one of the images. Is the asset file in `/assets/`?",
-    });
+    return interaction.editReply({ content: "❌ Couldn't load one of the images. Is the asset file in `/assets/`?" });
   }
 
   const attachment = new AttachmentBuilder(buffer, { name: "bully.png" });
@@ -175,7 +144,7 @@ export async function execute(interaction) {
     new ButtonBuilder()
       .setCustomId(`fightback:${bully.id}`)
       .setLabel("Fight back! 🥊")
-      .setStyle(ButtonStyle.Danger),
+      .setStyle(ButtonStyle.Danger)
   );
 
   return interaction.editReply({ files: [attachment], components: [row] });

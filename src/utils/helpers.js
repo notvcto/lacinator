@@ -52,6 +52,9 @@ export async function resolveNsfw(interaction) {
     const channel = interaction.channel.partial
       ? await interaction.channel.fetch()
       : interaction.channel;
+    console.log(
+      `[NSFW] channelId=${channel.id} nsfw=${channel.nsfw} partial=${interaction.channel.partial} type=${channel.type}`,
+    );
     return channel?.nsfw === true;
   } catch (err) {
     console.log(`[NSFW] fetch failed: ${err.message}`);
@@ -140,7 +143,7 @@ export function buildQuestionComponents(sourceType) {
         new ButtonBuilder()
           .setCustomId("btn_truth")
           .setLabel("Truth")
-          .setStyle(ButtonStyle.Primary),
+          .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId("btn_dare")
           .setLabel("Dare")
@@ -190,6 +193,29 @@ export function buildQuestionComponents(sourceType) {
   }
 
   return row;
+}
+
+/**
+ * Return a copy of a message's components with all buttons disabled.
+ */
+export function disableComponents(components) {
+  return components.map((row) => ({
+    ...row,
+    components: row.components.map((c) => ({ ...c, disabled: true })),
+  }));
+}
+
+/**
+ * Auto-disable buttons on a message after a delay.
+ * Pass the interaction and delay in ms (default: 5 minutes).
+ * Silently ignores errors (message deleted, already edited, etc.)
+ */
+export async function expireButtons(interaction, ms = 5 * 60 * 1000) {
+  const msg = await interaction.fetchReply().catch(() => null);
+  if (!msg) return;
+  setTimeout(() => {
+    msg.edit({ components: disableComponents(msg.components) }).catch(() => {});
+  }, ms);
 }
 
 /**

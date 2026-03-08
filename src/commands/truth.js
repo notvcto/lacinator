@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from "discord.js";
-import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, buildAndiTaxEmbed, rollAndiTax, resolveNsfw, emptyReply } from "../utils/helpers.js";
+import { getRandomQuestion, buildQuestionEmbed, buildQuestionComponents, buildAndiTaxEmbed, rollAndiTax, resolveNsfw, expireButtons, emptyReply } from "../utils/helpers.js";
+import { config } from "../../config.js";
 
 export const data = new SlashCommandBuilder()
   .setName("truth")
@@ -17,18 +18,14 @@ export async function execute(interaction) {
 
   const taxQuestion = await rollAndiTax(interaction.user.id, "truth", allowR);
   if (taxQuestion) {
-    return interaction.editReply({
-      embeds: [buildAndiTaxEmbed(taxQuestion, interaction.user)],
-      components: [buildQuestionComponents("truth")],
-    });
+    await interaction.editReply({ embeds: [buildAndiTaxEmbed(taxQuestion, interaction.user)], components: [buildQuestionComponents("truth")] });
+    return expireButtons(interaction, config.buttonExpiryMs);
   }
 
   const question = await getRandomQuestion("truth", allowR, rating);
   if (question?.__blocked) return interaction.editReply({ content: "🔞 R-rated questions are only available in age-restricted channels." });
   if (!question) return interaction.editReply(emptyReply("truth"));
 
-  return interaction.editReply({
-    embeds: [buildQuestionEmbed(question, interaction.user)],
-    components: [buildQuestionComponents("truth")],
-  });
+  await interaction.editReply({ embeds: [buildQuestionEmbed(question, interaction.user)], components: [buildQuestionComponents("truth")] });
+  expireButtons(interaction, config.buttonExpiryMs);
 }

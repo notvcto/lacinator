@@ -11,23 +11,24 @@ export async function execute(interaction) {
 
   // ── Game commands (everyone) ───────────────────────────────────────────
   const gameCommands = [
-    ["/truth",  "Get a random Truth question."],
+    ["/truth",  "Get a random Truth question. Buttons let you keep going without retyping."],
     ["/dare",   "Get a random Dare."],
     ["/nhie",   "Get a Never Have I Ever prompt."],
     ["/wyr",    "Get a Would You Rather question."],
-    ["/random", "Get a random question from any category."],
+    ["/random", "Get a random question from any category (no dares)."],
     ["/ship",   "Find out how compatible two people are 💘"],
-    ["/bully",  "Deploy the boot 🥾"],
-    ["/stats",  "See the question pool breakdown."],
-    ["/ping",   "Check if Lacinator is alive."],
+    ["/bully",  "Deploy the boot on someone 🥾 (defaults to Andi)"],
+    ["/stats",  "See the question pool breakdown by type and rating."],
+    ["/ping",   "Check bot, API, and database status."],
+    ["/help",   "This menu."],
   ];
 
   // ── Mod commands (authorized users) ───────────────────────────────────
   const modCommands = [
-    ["/add",    "Add a question to the pool."],
-    ["/edit",   "Edit a question by ID."],
-    ["/remove", "Remove a question by ID."],
-    ["/list",   "Browse the question pool."],
+    ["/add",      "Add a question to the main pool."],
+    ["/edit",     "Edit a question by ID."],
+    ["/remove",   "Remove a question by ID."],
+    ["/list",     "Browse the main pool — paginated with inline edit/remove."],
     ["/search",   "Search questions by keyword."],
     ["/andiadd",  "Add a question to the Andi special pool 🎯"],
     ["/andilist", "Browse & manage the Andi pool 🎯"],
@@ -35,9 +36,9 @@ export async function execute(interaction) {
 
   // ── Owner commands ─────────────────────────────────────────────────────
   const ownerCommands = [
-    ["/trust add",    "Grant a user access to manage questions."],
+    ["/trust add",    "Grant a user mod-level access."],
     ["/trust remove", "Revoke a user's access."],
-    ["/trust list",   "See all trusted users."],
+    ["/trust list",   "See all currently trusted users."],
   ];
 
   const fmt = (cmds) =>

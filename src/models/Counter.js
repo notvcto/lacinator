@@ -13,7 +13,7 @@ counterSchema.statics.nextValue = async function (name) {
   const doc = await this.findOneAndUpdate(
     { name },
     { $inc: { value: 1 } },
-    { new: true, upsert: true }
+    { new: true, upsert: true },
   );
   return doc.value;
 };

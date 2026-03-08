@@ -29,7 +29,7 @@ const andiQuestionSchema = new mongoose.Schema(
     addedByUsername: { type: String, required: true },
     active: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 andiQuestionSchema.index({ type: 1, active: 1 });

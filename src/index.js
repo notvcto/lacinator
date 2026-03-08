@@ -19,8 +19,15 @@ mongoose
     for (const userId of config.owners) {
       await TrustedUser.updateOne(
         { userId },
-        { $setOnInsert: { userId, username: "owner", addedBy: "system", addedByUsername: "system" } },
-        { upsert: true }
+        {
+          $setOnInsert: {
+            userId,
+            username: "owner",
+            addedBy: "system",
+            addedByUsername: "system",
+          },
+        },
+        { upsert: true },
       );
     }
   })
@@ -38,7 +45,7 @@ const client = new Client({
 client.commands = new Collection();
 
 const commandFiles = readdirSync(path.join(__dirname, "commands")).filter((f) =>
-  f.endsWith(".js")
+  f.endsWith(".js"),
 );
 
 for (const file of commandFiles) {
@@ -56,7 +63,7 @@ for (const file of commandFiles) {
 
 // ── Load events ──────────────────────────────────────────────────────────────
 const eventFiles = readdirSync(path.join(__dirname, "events")).filter((f) =>
-  f.endsWith(".js")
+  f.endsWith(".js"),
 );
 
 for (const file of eventFiles) {

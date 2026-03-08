@@ -40,7 +40,7 @@ const questionSchema = new mongoose.Schema(
       default: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for fast random pulls per type

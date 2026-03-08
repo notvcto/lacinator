@@ -16,6 +16,9 @@ export const config = {
   // 0.20 = 20% chance. Set to 1.0 for full chaos.
   andiTaxRate: 0.2,
 
+  // How long before question buttons auto-disable (ms). Default: 5 minutes.
+  buttonExpiryMs: 5 * 60 * 1000,
+
   // Default number of questions per page in /list
   listPageSize: 10,
 
